@@ -143,6 +143,18 @@ function showSuccessMessage() {
   height: fit-content;
   position: sticky;
   top: 2rem;
+  transition: all 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  transform-origin: left center;
+}
+
+.event-form-card:hover {
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+  border-color: rgba(102, 126, 234, 0.3);
+}
+
+.event-form-card:focus-within {
+  box-shadow: 0 12px 40px rgba(102, 126, 234, 0.2);
+  border-color: rgba(102, 126, 234, 0.5);
 }
 
 .form-title {
@@ -155,16 +167,12 @@ function showSuccessMessage() {
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+  transition: all 0.3s ease;
 }
 
-.error-message {
-  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-  color: white;
-  padding: 0.75rem 1rem;
-  border-radius: 8px;
-  margin-bottom: 1rem;
-  font-size: 0.9rem;
-  text-align: center;
+.event-form-card:hover .form-title,
+.event-form-card:focus-within .form-title {
+  transform: scale(1.02);
 }
 
 .event-form {
@@ -177,6 +185,7 @@ function showSuccessMessage() {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+  transition: all 0.3s ease;
 }
 
 .form-label {
@@ -191,7 +200,7 @@ function showSuccessMessage() {
   border: 2px solid #e5e7eb;
   border-radius: 10px;
   font-size: 1rem;
-  transition: all 0.3s ease;
+  transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
   background: rgba(255, 255, 255, 0.9);
   font-family: inherit;
 }
@@ -202,6 +211,7 @@ function showSuccessMessage() {
   border-color: #667eea;
   box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
   background: rgba(255, 255, 255, 1);
+  transform: translateY(-1px);
 }
 
 .form-textarea {
@@ -216,7 +226,7 @@ function showSuccessMessage() {
   font-size: 1rem;
   font-weight: 700;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -227,7 +237,7 @@ function showSuccessMessage() {
 }
 
 .btn:hover:not(:disabled) {
-  transform: translateY(-3px);
+  transform: translateY(-3px) scale(1.02);
 }
 
 .btn:disabled {

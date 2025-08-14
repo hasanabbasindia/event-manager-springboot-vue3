@@ -104,6 +104,8 @@ defineExpose({ load })
   height: 100%;
   display: flex;
   flex-direction: column;
+  transition: all 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  transform-origin: right center;
 }
 
 .section-title {
@@ -116,6 +118,7 @@ defineExpose({ load })
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+  transition: all 0.3s ease;
 }
 
 .table-container {
@@ -125,6 +128,7 @@ defineExpose({ load })
   background: rgba(255, 255, 255, 0.8);
   flex: 1;
   max-height: 60vh;
+  transition: all 0.4s ease;
 }
 
 .events-table {

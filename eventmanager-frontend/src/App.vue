@@ -10,6 +10,8 @@ const location = ref('')
 const sort = ref('date,asc')
 const locations = ref([])
 
+const isFormExpanded = ref(false)
+
 let listRef
 function refreshList() { listRef && listRef.load && listRef.load() }
 
@@ -34,6 +36,19 @@ function clearFilters() {
 function handleEventCreated() {
   refreshList()
   loadLocations() // Refresh locations when new event is created
+}
+
+function expandForm() {
+  isFormExpanded.value = true
+}
+
+function collapseForm() {
+  // Add a small delay to prevent immediate collapse when switching between fields
+  setTimeout(() => {
+    if (!document.querySelector('.form-section input:focus, .form-section textarea:focus, .form-section select:focus')) {
+      isFormExpanded.value = false
+    }
+  }, 100)
 }
 
 onMounted(() => {
@@ -91,8 +106,12 @@ onMounted(() => {
           </div>
 
           <!-- Main Content Grid -->
-          <div class="content-grid">
-            <div class="form-section">
+          <div class="content-grid" :class="{ 'form-expanded': isFormExpanded }">
+            <div 
+              class="form-section" 
+              @focusin="expandForm"
+              @focusout="collapseForm"
+            >
               <EventForm @created="handleEventCreated" />
             </div>
             <div class="list-section">
@@ -229,55 +248,80 @@ body {
 
 .content-grid {
   display: grid;
-  grid-template-columns: 1fr 1.2fr;
+  grid-template-columns: 400px 1fr;
   gap: 2rem;
   align-items: start;
+  transition: all 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  overflow: visible;
+  position: relative;
+}
+
+.content-grid.form-expanded {
+  grid-template-columns: 650px 1fr;
+  gap: 1rem;
+  overflow: hidden;
 }
 
 .form-section,
 .list-section {
   background: transparent;
   padding: 0;
+  transition: all 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 
-.btn {
-  padding: 0.75rem 1.5rem;
-  border: none;
-  border-radius: 10px;
-  font-size: 0.9rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  text-transform: uppercase;
-  letter-spacing: 0.3px;
+.form-section {
+  width: 100%;
+  z-index: 20;
 }
 
-.btn:hover {
-  transform: translateY(-2px);
+.list-section {
+  width: 100%;
+  transform: translateX(0);
+  opacity: 1;
 }
 
-.btn-clear {
-  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-  color: white;
-  box-shadow: 0 4px 15px rgba(245, 158, 11, 0.3);
+.form-expanded .form-section {
+  z-index: 30;
 }
 
-.btn-clear:hover {
-  box-shadow: 0 6px 20px rgba(245, 158, 11, 0.4);
-}
-
-.btn-icon {
-  font-size: 1rem;
+.form-expanded .list-section {
+  transform: translateX(80px);
+  opacity: 0.6;
 }
 
 /* Responsive Design */
+@media (max-width: 1200px) {
+  .content-grid {
+    grid-template-columns: 350px 1fr;
+  }
+  
+  .content-grid.form-expanded {
+    grid-template-columns: 550px 1fr;
+    overflow: hidden;
+  }
+  
+  .form-expanded .list-section {
+    transform: translateX(120px);
+    opacity: 0.4;
+  }
+}
+
 @media (max-width: 1024px) {
   .content-grid {
     grid-template-columns: 1fr;
     gap: 2rem;
+    overflow: visible;
+  }
+  
+  .content-grid.form-expanded {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+    overflow: visible;
+  }
+  
+  .form-expanded .list-section {
+    transform: translateY(20px);
+    opacity: 0.7;
   }
   
   .filters-grid {

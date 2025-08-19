@@ -1,6 +1,7 @@
 <script setup>
-import { onMounted, ref, watch } from 'vue'
+import { onMounted, ref, watch, nextTick } from 'vue'
 import { listEvents, deleteEventById } from '../api/EventService'
+import ValidationStrip from './ValidationStrip.vue'
 
 const events = ref([])
 const page = ref(0)
@@ -11,6 +12,13 @@ const search = defineModel({ type: String, default: '' })
 const location = defineModel('location', { type: String, default: '' })
 const sort = defineModel('sort', { type: String, default: 'date,asc' })
 
+const showDeleteConfirm = ref(false)
+const deleteMessage = ref('')
+const eventToDelete = ref(null)
+const showValidationStrip = ref(false)
+const validationMessage = ref('')
+const validationType = ref('error')
+
 async function load() {
   const data = await listEvents({ page: page.value, size: size.value, name: search.value, location: location.value, sort: sort.value })
   events.value = data.content || []
@@ -20,10 +28,47 @@ async function load() {
 function pages() { return Math.max(1, Math.ceil((totalElements.value || 0) / size.value)) }
 
 async function onDelete(id) {
-  if (confirm('Delete this event?')) {
-    await deleteEventById(id)
-    await load()
+  console.log('Delete clicked for event:', id)
+  eventToDelete.value = id
+  deleteMessage.value = 'Are you sure you want to delete this event? This action cannot be undone.'
+  showDeleteConfirm.value = true
+  console.log('showDeleteConfirm set to:', showDeleteConfirm.value)
+  console.log('deleteMessage set to:', deleteMessage.value)
+  
+  // Force reactivity update
+  await nextTick()
+  console.log('After nextTick - showDeleteConfirm:', showDeleteConfirm.value)
+}
+
+async function confirmDelete() {
+  if (eventToDelete.value) {
+    try {
+      await deleteEventById(eventToDelete.value)
+      await load()
+      validationMessage.value = 'Event deleted successfully!'
+      validationType.value = 'success'
+      showValidationStrip.value = true
+      console.log('ValidationStrip triggered with success message')
+    } catch (error) {
+      console.error('Error deleting event:', error)
+      validationMessage.value = 'Failed to delete event. Please try again.'
+      validationType.value = 'error'
+      showValidationStrip.value = true
+      console.log('ValidationStrip triggered with error message')
+    }
   }
+  closeDeleteConfirm()
+}
+
+function closeDeleteConfirm() {
+  showDeleteConfirm.value = false
+  deleteMessage.value = ''
+  eventToDelete.value = null
+}
+
+function closeValidationStrip() {
+  showValidationStrip.value = false
+  validationMessage.value = ''
 }
 
 onMounted(load)
@@ -87,6 +132,36 @@ defineExpose({ load })
         <button class="btn btn-secondary" :disabled="page + 1 >= pages()" @click="page = page + 1; load()">
           Next
           <span class="btn-icon">→</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Validation Strip for success/error messages -->
+    <ValidationStrip 
+      :show="showValidationStrip"
+      :message="validationMessage"
+      :type="validationType"
+      @close="closeValidationStrip"
+    />
+    
+    <!-- Delete Confirmation Strip -->
+    <ValidationStrip 
+      :show="showDeleteConfirm"
+      :message="deleteMessage"
+      type="warning"
+      @close="closeDeleteConfirm"
+    />
+    
+    <!-- Confirmation buttons -->
+    <div v-if="showDeleteConfirm" class="confirmation-overlay">
+      <div class="confirmation-buttons">
+        <button @click="confirmDelete" class="btn btn-danger-confirm">
+          <span class="btn-icon">🗑️</span>
+          Delete
+        </button>
+        <button @click="closeDeleteConfirm" class="btn btn-cancel">
+          <span class="btn-icon">✖️</span>
+          Cancel
         </button>
       </div>
     </div>
@@ -288,9 +363,9 @@ defineExpose({ load })
 }
 
 .btn-danger {
-  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  background: linear-gradient(135deg, #ff9a9a 10%, #ff6969 100%);
   color: white;
-  box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
 }
 
 .btn-danger:hover:not(:disabled) {
@@ -336,45 +411,84 @@ defineExpose({ load })
   .event-list-card {
     padding: 1rem;
   }
-  
   .section-title {
     font-size: 1.5rem;
   }
-  
   .table-header,
   .table-cell {
     padding: 0.75rem 1rem;
   }
-  
   .pagination-container {
     flex-direction: column;
     gap: 1rem;
     text-align: center;
   }
-  
   .pagination-controls {
     justify-content: center;
   }
-  
   .btn {
     padding: 0.6rem 1.2rem;
     font-size: 0.85rem;
   }
 }
-
 @media (max-width: 480px) {
   .events-table {
     font-size: 0.85rem;
   }
-  
   .table-header,
   .table-cell {
     padding: 0.5rem 0.75rem;
   }
-  
   .date-badge {
     padding: 0.3rem 0.75rem;
     font-size: 0.8rem;
+  }
+}
+.confirmation-overlay {
+  position: fixed;
+  top: 160px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1001;
+}
+.confirmation-buttons {
+  display: flex;
+  gap: 0.75rem;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  padding: 1rem;
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+.btn-danger-confirm {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  color: white;
+  box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3);
+}
+
+.btn-danger-confirm:hover:not(:disabled) {
+  box-shadow: 0 6px 20px rgba(239, 68, 68, 0.4);
+}
+
+.btn-cancel {
+  background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
+  color: white;
+  box-shadow: 0 4px 15px rgba(107, 114, 128, 0.3);
+}
+
+.btn-cancel:hover:not(:disabled) {
+  box-shadow: 0 6px 20px rgba(107, 114, 128, 0.4);
+}
+
+@media (max-width: 768px) {
+  .confirmation-overlay {
+    left: 1rem;
+    right: 1rem;
+    transform: none;
+  }
+  .confirmation-buttons {
+    flex-direction: column;
   }
 }
 </style>

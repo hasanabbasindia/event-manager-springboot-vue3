@@ -1,6 +1,7 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { createEvent } from '../api/EventService'
+import ValidationStrip from './ValidationStrip.vue'
 
 const event = ref({
   name: '',
@@ -9,8 +10,9 @@ const event = ref({
   location: ''
 })
 
-const message = ref(null)
 const isSubmitting = ref(false)
+const showValidationStrip = ref(false)
+const validationMessage = ref('')
 
 const emit = defineEmits(['created'])
 
@@ -19,13 +21,22 @@ const isValid = computed(() => {
 })
 
 async function handleSubmit() {
-  message.value = null
-  if (!isValid.value) return
-  
+  // Prevent browser validation
+  if (!isValid.value) {
+    const missingFields = []
+    if (!event.value.name) missingFields.push('Event Name')
+    if (!event.value.date) missingFields.push('Event Date')
+    if (!event.value.location) missingFields.push('Location')
+
+    validationMessage.value = `Please fill in the following required fields: ${missingFields.join(', ')}`
+    showValidationStrip.value = true
+    return
+  }
+
   isSubmitting.value = true
   try {
     await createEvent(event.value)
-    
+
     // Reset form
     event.value = {
       name: '',
@@ -33,50 +44,28 @@ async function handleSubmit() {
       date: '',
       location: ''
     }
-    
+
     emit('created')
-    showSuccessMessage()
   } catch (error) {
     console.error('Error creating event:', error)
-    message.value = 'Error creating event. Please try again.'
+    validationMessage.value = 'Failed to create event. Please try again.'
+    showValidationStrip.value = true
   } finally {
     isSubmitting.value = false
   }
 }
 
-function showSuccessMessage() {
-  // Create a temporary success message
-  const messageEl = document.createElement('div')
-  messageEl.textContent = 'Event created successfully!'
-  messageEl.style.cssText = `
-    position: fixed;
-    top: 20px;
-    right: 20px;
-    background: linear-gradient(135deg, #10b981, #059669);
-    color: white;
-    padding: 1rem 1.5rem;
-    border-radius: 8px;
-    box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
-    z-index: 1000;
-    font-weight: 500;
-  `
-  document.body.appendChild(messageEl)
-  
-  setTimeout(() => {
-    document.body.removeChild(messageEl)
-  }, 3000)
+function closeValidationStrip() {
+  showValidationStrip.value = false
+  validationMessage.value = ''
 }
 </script>
 
 <template>
   <div class="event-form-card">
     <h2 class="form-title">Create New Event</h2>
-    
-    <div v-if="message" class="error-message">
-      {{ message }}
-    </div>
-    
-    <form @submit.prevent="handleSubmit" class="event-form">
+
+    <form @submit.prevent="handleSubmit" class="event-form" novalidate>
       <div class="form-group">
         <label for="name" class="form-label">Event Name *</label>
         <input
@@ -85,10 +74,9 @@ function showSuccessMessage() {
           type="text"
           class="form-input"
           placeholder="Enter event name"
-          required
         />
       </div>
-      
+
       <div class="form-group">
         <label for="description" class="form-label">Description</label>
         <textarea
@@ -99,7 +87,7 @@ function showSuccessMessage() {
           rows="4"
         ></textarea>
       </div>
-      
+
       <div class="form-group">
         <label for="date" class="form-label">Event Date *</label>
         <input
@@ -107,10 +95,9 @@ function showSuccessMessage() {
           v-model="event.date"
           type="date"
           class="form-input"
-          required
         />
       </div>
-      
+
       <div class="form-group">
         <label for="location" class="form-label">Location *</label>
         <input
@@ -119,16 +106,23 @@ function showSuccessMessage() {
           type="text"
           class="form-input"
           placeholder="Enter event location"
-          required
         />
       </div>
-      
-      <button type="submit" class="btn btn-primary" :disabled="isSubmitting || !isValid">
+
+      <button type="submit" class="btn btn-primary" :disabled="isSubmitting">
         <span v-if="isSubmitting" class="btn-spinner"></span>
         <span v-else class="btn-icon">➕</span>
         {{ isSubmitting ? 'Creating Event...' : 'Create Event' }}
       </button>
     </form>
+
+    <!-- Validation Strip -->
+    <ValidationStrip 
+      :show="showValidationStrip"
+      :message="validationMessage"
+      type="error"
+      @close="closeValidationStrip"
+    />
   </div>
 </template>
 
@@ -273,6 +267,68 @@ function showSuccessMessage() {
   to {
     transform: rotate(360deg);
   }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .event-form-card {
+    padding: 1.5rem;
+    position: static;
+  }
+  
+  .form-title {
+    font-size: 1.5rem;
+  }
+  
+  .btn {
+    padding: 0.875rem 1.5rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .event-form-card {
+    padding: 1rem;
+  }
+  
+  .form-input,
+  .form-textarea {
+    padding: 0.75rem;
+  }
+
+
+  .event-form-card {
+    padding: 1rem;
+  }
+  
+  .form-input,
+  .form-textarea {
+    padding: 0.75rem;
+  }
+}
+
+.btn-spinner {
+  width: 18px;
+  height: 18px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  border-top: 2px solid white;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.error-message {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  color: white;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+  text-align: center;
 }
 
 /* Responsive Design */

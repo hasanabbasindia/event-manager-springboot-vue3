@@ -54,6 +54,25 @@ function collapseForm() {
 onMounted(() => {
   loadLocations()
 })
+
+import EventListView from './views/EventListView.vue'
+import CreateEventView from './views/CreateEventView.vue'
+
+const activeTab = ref('list')
+
+const tabs = [
+  { id: 'list', label: 'Event List', icon: '📋' },
+  { id: 'create', label: 'Create Event', icon: '➕' }
+]
+
+function switchTab(tabId) {
+  activeTab.value = tabId
+}
+
+function onEventCreated() {
+  // Switch to list view after creating an event
+  activeTab.value = 'list'
+}
 </script>
 
 <template>
@@ -62,74 +81,147 @@ onMounted(() => {
       <div class="header-content">
         <h1 class="app-title">Event Manager</h1>
         <p class="app-subtitle">Manage your events efficiently</p>
+        
+        <!-- Navigation Tabs -->
+        <nav class="tab-navigation">
+          <button
+            v-for="tab in tabs"
+            :key="tab.id"
+            @click="switchTab(tab.id)"
+            :class="['tab-button', { 'active': activeTab === tab.id }]"
+          >
+            <span class="tab-icon">{{ tab.icon }}</span>
+            <span class="tab-label">{{ tab.label }}</span>
+          </button>
+        </nav>
       </div>
     </header>
     
     <main class="app-main">
-      <div class="container">
-        <div class="content-wrapper">
-          <!-- Search and Filter Section -->
-          <div class="filters-section">
-            <div class="filters-card">
-              <div class="filters-grid">
-                <div class="filter-group">
-                  <label class="filter-label">Search Events</label>
-                  <input 
-                    v-model="search" 
-                    type="text" 
-                    placeholder="Search by name..." 
-                    class="filter-input"
-                  />
-                </div>
-                <div class="filter-group">
-                  <label class="filter-label">Location</label>
-                  <select class="filter-select" v-model="location">
-                    <option value="">All locations</option>
-                    <option v-for="loc in locations" :key="loc" :value="loc">{{ loc }}</option>
-                  </select>
-                </div>
-                <div class="filter-group">
-                  <label class="filter-label">Sort By</label>
-                  <select v-model="sort" class="filter-select">
-                    <option value="date,asc">Date (Ascending)</option>
-                    <option value="date,desc">Date (Descending)</option>
-                  </select>
-                </div>
-                <div class="filter-group">
-                  <button @click="clearFilters" class="btn btn-clear">
-                    <span class="btn-icon">🔄</span>
-                    Clear
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Main Content Grid -->
-          <div class="content-grid" :class="{ 'form-expanded': isFormExpanded }">
-            <div 
-              class="form-section" 
-              @focusin="expandForm"
-              @focusout="collapseForm"
-            >
-              <EventForm @created="handleEventCreated" />
-            </div>
-            <div class="list-section">
-              <EventList 
-                ref="listRef"
-                v-model="search"
-                v-model:location="location"
-                v-model:sort="sort"
-              />
-            </div>
-          </div>
-        </div>
+      <!-- Tab Content -->
+      <div class="tab-content">
+        <Transition name="fade" mode="out-in">
+          <EventListView v-if="activeTab === 'list'" key="list" />
+          <CreateEventView v-else-if="activeTab === 'create'" key="create" @event-created="onEventCreated" />
+        </Transition>
       </div>
     </main>
   </div>
 </template>
 
 <style>
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background: #f8fafc;
+}
+
+#app {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  min-height: 100vh;
+  color: #2c3e50;
+}
+
+.app-header {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(20px);
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.header-content {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 2rem 1rem 1rem;
+  text-align: center;
+}
+
+.app-title {
+  font-size: 2.75rem;
+  font-weight: 800;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 0.5rem;
+  letter-spacing: -0.5px;
+}
+
+.app-subtitle {
+  font-size: 1.2rem;
+  color: #64748b;
+  font-weight: 500;
+  margin-bottom: 2rem;
+}
+
+.tab-navigation {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.tab-button {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.875rem 1.5rem;
+  border: 2px solid transparent;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.7);
+  color: #6b7280;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 0.95rem;
+}
+
+.tab-button:hover {
+  background: rgba(255, 255, 255, 0.9);
+  transform: translateY(-2px);
+}
+
+.tab-button.active {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border-color: rgba(255, 255, 255, 0.3);
+  box-shadow: 0 4px 20px rgba(102, 126, 234, 0.3);
+}
+
+.tab-icon {
+  font-size: 1.1rem;
+}
+
+.tab-label {
+  font-weight: 600;
+}
+
+.app-main {
+  flex: 1;
+}
+
+.tab-content {
+  min-height: 60vh;
+}
+
+/* Transition animations */
+.fade-enter-active, .fade-leave-active {
+  transition: all 0.3s ease;
+}
+
+.fade-enter-from, .fade-leave-to {
+  opacity: 0;
+  transform: translateY(20px);
+}
+
 * {
   margin: 0;
   padding: 0;
@@ -340,7 +432,7 @@ body {
   }
   
   .header-content {
-    padding: 1.5rem 1rem;
+    padding: 1.5rem 1rem 1rem;
   }
   
   .filters-grid {
